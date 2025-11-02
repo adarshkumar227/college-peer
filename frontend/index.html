@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>College Peer Matchmaker | Students</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .inc-btn,
+    .dec-btn {
+      padding: 2px 8px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+    }
+
+    .inc-btn:hover,
+    .dec-btn:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="index.html">Students</a>
+    <a href="peers.html">Peers</a>
+    <a href="matches.html">Matches</a>
+    <a href="sessions.html">Sessions</a>
+  </nav>
+
+  <h1>🎓 Student Registration</h1>
+
+  <form id="studentForm">
+    <div class="form-group">
+      <label for="name">Name:</label>
+      <input type="text" id="name" required>
+    </div>
+
+    <div class="form-group">
+      <label for="subject">Subject:</label>
+      <select id="subject" required>
+        <option value="">Select Subject</option>
+        <option value="DSA">DSA</option>
+        <option value="OS">OS</option>
+        <option value="Java">Java</option>
+        <option value="DBMS">DBMS</option>
+        <option value="AI">AI</option>
+      </select>
+    </div>
+
+    <!-- ✅ Budget Input -->
+    <div class="form-group">
+      <label>Budget Range (₹):</label>
+      <div class="input-group">
+        <button type="button" class="dec-btn" onclick="document.getElementById('rangeBudget').stepDown()">˅</button>
+        <input type="number" id="rangeBudget" min="5000" max="10000" step="500" value="5000" required>
+        <button type="button" class="inc-btn" onclick="document.getElementById('rangeBudget').stepUp()">^</button>
+      </div>
+    </div>
+
+    <!-- ✅ Rating Input -->
+    <div class="form-group">
+      <label>Rating (1–5):</label>
+      <div class="input-group">
+        <button type="button" class="dec-btn" onclick="document.getElementById('rating').stepDown()">˅</button>
+        <input type="number" id="rating" min="1" max="5" step="1" value="1" required>
+        <button type="button" class="inc-btn" onclick="document.getElementById('rating').stepUp()">^</button>
+      </div>
+    </div>
+
+    <!-- ✅ Experience Input -->
+    <div class="form-group">
+      <label>Experience (1–50 yrs):</label>
+      <div class="input-group">
+        <button type="button" class="dec-btn" onclick="document.getElementById('experience').stepDown()">˅</button>
+        <input type="number" id="experience" min="1" max="50" step="1" value="1" required>
+        <button type="button" class="inc-btn" onclick="document.getElementById('experience').stepUp()">^</button>
+      </div>
+    </div>
+
+    <button type="submit">Add Student</button>
+  </form>
+
+  <h2>Registered Students</h2>
+  <div class="table-container">
+    <table id="studentTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Subject</th>
+          <th>Budget</th>
+          <th>Rating</th>
+          <th>Experience</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+
+</html>

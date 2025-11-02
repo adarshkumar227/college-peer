@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>College Peer Matchmaker | Matches</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="index.html">Students</a>
+    <a href="peers.html">Peers</a>
+    <a href="matches.html">Matches</a>
+  </nav>
+
+  <h1>🤝 Student–Peer Matches</h1>
+
+  <div class="table-container">
+    <table id="matchTable">
+      <thead>
+        <tr>
+          <th>Student Name</th>
+          <th>Subject</th>
+          <th>Matched Peer</th>
+          <th>Peer Rating</th>
+          <th>Peer Experience</th>
+          <th>Session Date</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    const API_URL = "http://localhost:5000/api/matches";
+
+    async function loadMatches() {
+      const res = await fetch(API_URL);
+      const matches = await res.json();
+      const tableBody = document.querySelector("#matchTable tbody");
+      tableBody.innerHTML = "";
+      matches.forEach(m => {
+        tableBody.insertAdjacentHTML("beforeend", `
+          <tr>
+            <td>${m.student?.name || "-"}</td>
+            <td>${m.subject}</td>
+            <td>${m.peer?.name || "-"}</td>
+            <td>${m.peer?.rating || "-"}</td>
+            <td>${m.peer?.experience || "-"}</td>
+            <td>${new Date(m.sessionCreatedAt).toLocaleString()}</td>
+          </tr>
+        `);
+      });
+    }
+    loadMatches();
+  </script>
+</body>
+</html>

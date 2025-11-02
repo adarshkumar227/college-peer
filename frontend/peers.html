@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>College Peer Matchmaker | Peers</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .number-input {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      overflow: hidden;
+      width: 250px;
+    }
+    .number-input input {
+      border: none;
+      text-align: center;
+      width: 190px;
+      outline: none;
+      font-size: 15px;
+      padding: 5px;
+    }
+    .number-input button {
+      background: #ddd;
+      border: none;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 16px;
+      transition: background 0.2s;
+    }
+    .number-input button:hover {
+      background: #bbb;
+    }
+  </style>
+</head>
+<body>
+  <nav class="navbar">
+    <a href="index.html">Students</a>
+    <a href="peers.html">Peers</a>
+    <a href="matches.html">Matches</a>
+    <a href="sessions.html">Sessions</a>
+  </nav>
+
+  <h1>🤝 Peer Registration</h1>
+
+  <form id="peerForm">
+    <div class="form-group">
+      <label for="name">Name:</label>
+      <input type="text" id="name" required>
+    </div>
+
+    <div class="form-group">
+      <label for="domain">Domain:</label>
+      <select id="domain" required>
+        <option value="">Select Domain</option>
+        <option value="DSA">DSA</option>
+        <option value="OS">OS</option>
+        <option value="Java">Java</option>
+        <option value="DBMS">DBMS</option>
+        <option value="AI">AI</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="experience">Experience (yrs):</label><br>
+      <div class="number-input">
+        <button type="button" onclick="document.getElementById('experience').stepDown()">−</button>
+        <input type="number" id="experience" min="0" max="50" step="1" value="0" required>
+        <button type="button" onclick="document.getElementById('experience').stepUp()">+</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="rating">Rating (0–5):</label><br>
+      <div class="number-input">
+        <button type="button" onclick="document.getElementById('rating').stepDown()">−</button>
+        <input type="number" id="rating" min="0" max="5" step="1" value="0" required>
+        <button type="button" onclick="document.getElementById('rating').stepUp()">+</button>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="charges">Charges (₹):</label><br>
+      <div class="number-input">
+        <button type="button" onclick="document.getElementById('charges').stepDown()">−</button>
+        <input type="number" id="charges" min="3000" max="10000" step="500" value="3000" required>
+        <button type="button" onclick="document.getElementById('charges').stepUp()">+</button>
+      </div>
+    </div>
+
+    <button type="submit">Add Peer</button>
+  </form>
+
+  <h2>Registered Peers</h2>
+  <div class="table-container">
+    <table id="peerTable">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Domain</th>
+          <th>Experience</th>
+          <th>Rating</th>
+          <th>Charges</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script src="peerScript.js"></script>
+</body>
+</html>

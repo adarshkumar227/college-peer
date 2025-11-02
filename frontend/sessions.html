@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Sessions — College Peer Matchmaker</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --accent: #2563eb;
+      --muted: #6b7280;
+      --success: #10b981;
+      --danger: #ef4444;
+      --glass: rgba(0, 0, 0, 0.05);
+    }
+
+    body {
+      font-family: "Inter", system-ui, Arial;
+      background: var(--bg);
+      margin: 0;
+      padding: 28px;
+      color: #111827;
+    }
+
+    .wrap { max-width: 1200px; margin: 0 auto; }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 22px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      color: #0f172a;
+      font-weight: 700;
+    }
+
+    .muted { color: var(--muted); font-size: 13px; }
+
+    .card {
+      background: var(--card);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 0 4px 16px var(--glass);
+      margin-bottom: 22px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.07);
+    }
+
+    label {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    select,
+    input[type="text"],
+    input[type="datetime-local"],
+    textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 14px;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    select:focus,
+    input:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+    }
+
+    .row { display: flex; gap: 12px; }
+    .col { flex: 1; }
+
+    button.action {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: background 0.2s ease, transform 0.15s ease;
+    }
+
+    button.action:hover {
+      background: #1d4ed8;
+      transform: scale(1.02);
+    }
+
+    button.ghost {
+      background: transparent;
+      border: 1px solid #d1d5db;
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    button.ghost:hover {
+      background: #f3f4f6;
+    }
+
+    .badge {
+      background: #e0e7ff;
+      color: var(--accent);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 600;
+    }
+
+    .small { font-size: 13px; color: var(--muted); }
+
+    /* Cards area */
+    .cards-area {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+    }
+
+    .session-card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform 0.2s ease;
+    }
+
+    .session-card:hover {
+      transform: translateY(-3px);
+    }
+
+    .session-card .row-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .session-card h4 { margin: 0; font-size: 16px; font-weight: 600; color: #1e293b; }
+    .session-meta { font-size: 13px; color: var(--muted); }
+
+    .actions-row { display: flex; gap: 8px; margin-top: auto; }
+
+    .status-pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 12px;
+      text-transform: capitalize;
+    }
+
+    .status-pending { background: #fff7ed; color: #92400e; }
+    .status-active { background: #ecfeff; color: #065f46; }
+    .status-completed { background: #ecfdf5; color: #047857; }
+    .status-cancelled { background: #fff1f2; color: #7f1d1d; }
+
+    .vertical-list {
+      margin-top: 14px;
+      max-height: 360px;
+      overflow-y: auto;
+      border-radius: 10px;
+      padding: 10px;
+      background: #f9fafb;
+    }
+
+    .vertical-item {
+      background: #fff;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
+      cursor: grab;
+      transition: background 0.2s ease;
+    }
+
+    .vertical-item:hover { background: #f3f4f6; }
+    .vertical-item.dragging { opacity: 0.6; transform: scale(0.98); }
+
+    .controls { display: flex; gap: 12px; align-items: center; }
+    .top-actions { display: flex; gap: 8px; align-items: center; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      background: #fff;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px 14px;
+      border-bottom: 1px solid #eef2f6;
+      font-size: 14px;
+    }
+
+    th {
+      color: #374151;
+      font-weight: 600;
+      background: #f9fafb;
+    }
+
+    tr:hover td {
+      background: #f3f4f6;
+    }
+
+    /* Modal styles */
+    #detailsModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(3px);
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+    }
+
+    #detailsModal .modal-content {
+      background: #fff;
+      border-radius: 12px;
+      padding: 24px;
+      width: 90%;
+      max-width: 420px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      position: relative;
+    }
+
+    #closeModalBtn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      border: none;
+      background: transparent;
+      font-size: 18px;
+      color: #6b7280;
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+
+    #closeModalBtn:hover { color: #ef4444; }
+
+    @media (max-width: 720px) {
+      .row { flex-direction: column; }
+      header { gap: 8px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>📅 Sessions Dashboard</h1>
+        <div class="muted">Matches based on subject, budget, rating & experience</div>
+      </div>
+      <div class="controls">
+        <div class="top-actions">
+          <button id="bulkGenerateBtn" class="action">Generate Matches (bulk)</button>
+          <button id="refreshBtn" class="ghost">Refresh</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="card" id="createSessionCard">
+      <label for="studentSelect">Choose Student</label>
+      <select id="studentSelect"></select>
+
+      <div style="height:12px"></div>
+
+      <label for="topicInput">Topic (optional)</label>
+      <input id="topicInput" type="text" placeholder="Topic or subject (defaults to student's subject)" />
+
+      <div style="display:flex; gap:12px; margin-top:12px;">
+        <div style="flex:1">
+          <label for="scheduledAt">Scheduled time (optional)</label>
+          <input id="scheduledAt" type="datetime-local" />
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+          <button id="createSessionBtn" class="action">Find & Create Session</button>
+        </div>
+      </div>
+
+      <div id="matchBox" style="margin-top:14px; display:none;" class="card">
+        <div class="row-top" style="align-items:center; gap:14px;">
+          <div class="badge">Matched</div>
+          <div>
+            <div id="matchedPeerName" style="font-weight:700"></div>
+            <div class="small" id="matchedPeerDetails"></div>
+          </div>
+          <div style="margin-left:auto" class="small">
+            Score: <span id="matchedScore"></span>
+          </div>
+        </div>
+        <div id="matchNotes" class="small" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Active / Recent Sessions (cards)</h3>
+      <div id="cardGrid" class="cards-area"></div>
+
+      <div style="height:12px"></div>
+
+      <h4 style="margin-bottom:8px">More Sessions (drag to reorder locally)</h4>
+      <div id="verticalList" class="vertical-list"></div>
+
+      <div style="height:12px"></div>
+
+      <h3 style="margin-top:0">All Sessions (table)</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Peer</th>
+            <th>Topic</th>
+            <th>Status</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="sessionTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div id="detailsModal">
+    <div class="modal-content">
+      <button id="closeModalBtn" title="Close">✕</button>
+      <h3 id="modalTitle">Session Details</h3>
+      <p id="modalBody" style="color:#374151; font-size:14px;"></p>
+    </div>
+  </div>
+
+  <script>
+    const modal = document.getElementById("detailsModal");
+    const closeModalBtn = document.getElementById("closeModalBtn");
+
+    closeModalBtn.addEventListener("click", () => {
+      modal.style.display = "none";
+    });
+
+    window.addEventListener("click", (e) => {
+      if (e.target === modal) modal.style.display = "none";
+    });
+  </script>
+
+  <script src="sessionScript.js"></script>
+</body>
+</html>
