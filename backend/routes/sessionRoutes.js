@@ -98,7 +98,6 @@ router.post("/match", async (req, res) => {
         score: s.score,
         breakdown: s.breakdown,
       }));
-      // prevent caching of the response
       res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
       return res.json({ candidates: top });
     }
@@ -127,7 +126,6 @@ router.post("/match", async (req, res) => {
         .populate("studentId", "name subject rangeBudget rating experience")
         .populate("peerId", "name domain charges rating experience");
 
-      // prevent caching
       res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
       return res.status(201).json({ session: populated, score: matchInfo });
     }
@@ -206,7 +204,6 @@ router.post("/match/bulk", async (req, res) => {
       });
     }
 
-    // prevent caching
     res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
     return res.json({
       created: createdSessions,
@@ -232,7 +229,6 @@ router.patch("/:id", async (req, res) => {
     if (typeof remarks !== "undefined") updates.remarks = remarks;
     if (typeof topic !== "undefined") updates.topic = topic;
 
-    // ensure DB write persistence
     updates.updatedAt = new Date();
 
     const updated = await Session.findByIdAndUpdate(
@@ -240,18 +236,18 @@ router.patch("/:id", async (req, res) => {
       { $set: updates },
       { new: true, runValidators: true }
     )
-      .populate("studentId", "name subject")
-      .populate("peerId", "name domain");
+      .populate("studentId", "name subject rangeBudget rating experience")
+      .populate("peerId", "name domain charges rating experience");
 
     if (!updated) return res.status(404).json({ message: "Session not found" });
 
-    // prevent caching
-    res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    // ✅ Force database write confirmation
+    await updated.save();
 
-    // ✅ return updated session explicitly
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
     return res.json({
       success: true,
-      message: "Session updated and saved to database",
+      message: "Session updated permanently in database",
       session: updated,
     });
   } catch (err) {
@@ -261,18 +257,42 @@ router.patch("/:id", async (req, res) => {
 });
 
 /**
+ * DELETE /api/sessions/:id
+ * Delete session from DB permanently
+ */
+router.delete("/:id", async (req, res) => {
+  try {
+    const deleted = await Session.findByIdAndDelete(req.params.id);
+
+    if (!deleted)
+      return res
+        .status(404)
+        .json({ message: "Session not found or already deleted" });
+
+    res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+    return res.json({
+      success: true,
+      message: "Session deleted permanently from database",
+      deletedId: req.params.id,
+    });
+  } catch (err) {
+    console.error("Error deleting session:", err);
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+/**
  * GET /api/sessions
- * List sessions (populated), most recent first
+ * Always fetch latest sessions (no cache)
  */
 router.get("/", async (req, res) => {
   try {
     const sessions = await Session.find()
       .populate("studentId", "name subject rangeBudget rating experience")
       .populate("peerId", "name domain charges rating experience")
-      .sort({ updatedAt: -1 }) // ✅ use updatedAt instead of createdAt
-      .limit(1000);
+      .sort({ updatedAt: -1 })
+      .lean();
 
-    // prevent caching so frontend always gets latest DB state
     res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
     res.json(sessions);
   } catch (err) {

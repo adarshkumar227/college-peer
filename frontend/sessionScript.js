@@ -63,11 +63,16 @@ async function handleCloseSession(sessionId, cardElement) {
   try {
     if (cardElement && cardElement.remove) cardElement.remove();
     // attempt backend delete (DELETE endpoint)
-    const res = await fetch(`${API_BASE}/${sessionId}`, { method: "DELETE" });
+    const delUrl = `${API_BASE}/${sessionId}?t=${Date.now()}`;
+    const res = await fetch(delUrl, { method: "DELETE", cache: "no-store" });
     if (!res.ok) {
-      // try fallback close endpoint
-      const alt = await fetch(`${API_BASE}/${sessionId}/close`, { method: "POST" });
-      if (!alt.ok) throw new Error("Server failed to delete/close session");
+      // try fallback close endpoint (if backend supports it)
+      const alt = await fetch(`${API_BASE}/${sessionId}/close?t=${Date.now()}`, { method: "POST", cache: "no-store" });
+      if (!alt.ok) {
+        // show status code to help debugging
+        console.error("Delete and fallback both failed", { deleteStatus: res.status, closeStatus: alt.status });
+        throw new Error("Server failed to delete/close session");
+      }
     }
     // refresh displays to ensure consistent state
     await loadAllDisplays();
@@ -104,7 +109,7 @@ function createPeerModeButton() {
       if (!id) return;
       // try to verify peer id
       try {
-        const r = await fetch(`${PEER_API}/${id}`);
+        const r = await fetch(`${PEER_API}/${id}?t=${Date.now()}`, { cache: "no-store" });
         if (r.ok) {
           const peer = await r.json();
           peerMode.enabled = true;
@@ -168,7 +173,7 @@ function enableStatusControls(enable) {
 // --- Students / peers loading ---------------------
 async function loadStudentsDropdown() {
   try {
-    const res = await fetch(STUDENT_API);
+    const res = await fetch(`${STUDENT_API}?t=${Date.now()}`, { cache: "no-store" });
     const students = await res.json();
     studentSelect.innerHTML = `<option value="">Select Student</option>`;
     students.forEach(s => {
@@ -183,7 +188,7 @@ async function loadStudentsDropdown() {
 }
 async function loadPeersList() {
   try {
-    const res = await fetch(PEER_API);
+    const res = await fetch(`${PEER_API}?t=${Date.now()}`, { cache: "no-store" });
     const peers = await res.json();
     return peers;
   } catch (err) {
@@ -199,10 +204,11 @@ createBtn.addEventListener("click", async (ev) => {
   if (!studentId) return alert("Select a student first");
 
   try {
-    const res = await fetch(`${API_BASE}/match`, {
+    const res = await fetch(`${API_BASE}/match?t=${Date.now()}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ studentId })
+      body: JSON.stringify({ studentId }),
+      cache: "no-store"
     });
     if (!res.ok) {
       const e = await res.json().catch(()=>({message:"Failed"}));
@@ -292,10 +298,11 @@ async function createSessionForStudentWithPeer(studentId, peerId) {
       topic: topicInput.value || undefined,
       scheduledAt: scheduledAtInput.value || undefined
     };
-    const res = await fetch(`${API_BASE}/match`, {
+    const res = await fetch(`${API_BASE}/match?t=${Date.now()}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
+      cache: "no-store"
     });
     if (!res.ok) {
       const e = await res.json().catch(()=>({message:"Failed"}));
@@ -315,7 +322,7 @@ async function createSessionForStudentWithPeer(studentId, peerId) {
 async function generateBulkMatches() {
   if (!confirm("Run bulk matching (greedy) across all students & peers? This will create sessions in DB.")) return;
   try {
-    const res = await fetch(`${API_BASE}/match/bulk`, { method: "POST", headers: { "Content-Type": "application/json" } });
+    const res = await fetch(`${API_BASE}/match/bulk?t=${Date.now()}`, { method: "POST", headers: { "Content-Type": "application/json" }, cache: "no-store" });
     if (!res.ok) {
       const e = await res.json().catch(()=>({message:"Failed"}));
       throw new Error(e.message || "Bulk matching failed");
@@ -331,35 +338,67 @@ async function generateBulkMatches() {
 
 // Update session (PATCH). Only allowed if peerMode.enabled === true.
 // This function still performs the fetch — enforcement of who calls it is UI-side.
-async function updateSessionStatus(sessionId, newStatus) {
+// ENFORCEMENT: only allow updates when peerMode.peerId === "1"
+async function updateSessionStatus(sessionId, newStatus, statusSelectElement) {
   if (!peerMode.enabled) {
     alert("Status updates are allowed only in Peer Mode. Click the floating button to enable.");
     // revert UI state by reloading values
     await loadAllDisplays();
     return;
   }
+
+  // enforce: only Peer with id exactly "1" can update
+  if (String(peerMode.peerId) !== "1") {
+    alert("Only Peer with ID = 1 is authorized to update session status.");
+    // revert UI state
+    if (statusSelectElement) {
+      statusSelectElement.value = statusSelectElement.dataset.current || "pending";
+      statusSelectElement.disabled = !peerMode.enabled;
+    }
+    return;
+  }
+
   try {
-    const res = await fetch(`${API_BASE}/${sessionId}`, {
+    // optimistic: disable control while updating
+    if (statusSelectElement) {
+      statusSelectElement.disabled = true;
+    }
+    const res = await fetch(`${API_BASE}/${sessionId}?t=${Date.now()}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus })
+      // include who updated (harmless extra field) — backend will ignore if not used
+      body: JSON.stringify({ status: newStatus, updatedByPeerId: peerMode.peerId }),
+      cache: "no-store"
     });
     if (!res.ok) {
       const e = await res.json().catch(()=>({message:"Failed"}));
       throw new Error(e.message || "Failed to update status");
     }
-    // reflect change
+    const resp = await res.json().catch(()=>null);
+    // Successful update: update the select's stored current value so it doesn't revert
+    if (statusSelectElement) {
+      statusSelectElement.dataset.current = newStatus;
+      statusSelectElement.disabled = !peerMode.enabled;
+    }
+    // reflect change by reloading fresh list (guarantees accurate UI)
     await loadAllDisplays();
+    return resp;
   } catch (err) {
     console.error("Error updating session status:", err);
     alert("Failed to update session status. See console.");
+    // revert select to stored value if available
+    if (statusSelectElement) {
+      const orig = statusSelectElement.dataset.current || "pending";
+      statusSelectElement.value = orig;
+      statusSelectElement.disabled = !peerMode.enabled;
+    }
   }
 }
 
 // --- Load sessions and populate UI ----------------
 async function loadSessions() {
   try {
-    const res = await fetch(API_BASE);
+    const res = await fetch(`${API_BASE}?t=${Date.now()}`, { cache: "no-store" });
     if (!res.ok) throw new Error("Failed to fetch sessions");
     const sessions = await res.json();
 
@@ -379,6 +418,8 @@ async function loadSessions() {
 
       const statusSelect = document.createElement("select");
       statusSelect.className = "session-status-select";
+      // store current status in dataset so we can revert on failure
+      statusSelect.dataset.current = currentStatus;
       ["pending","active","completed","cancelled"].forEach(st => {
         const opt = document.createElement("option");
         opt.value = st;
@@ -387,14 +428,15 @@ async function loadSessions() {
         statusSelect.appendChild(opt);
       });
       // status change handler will only actually update if peerMode enabled
-      statusSelect.addEventListener("change", () => {
+      statusSelect.addEventListener("change", async () => {
         if (!peerMode.enabled) {
           alert("Only peers can update status. Enable Peer Mode first.");
           // revert
-          statusSelect.value = currentStatus;
+          statusSelect.value = statusSelect.dataset.current || currentStatus;
           return;
         }
-        updateSessionStatus(s._id, statusSelect.value);
+        // pass the select element so updateSessionStatus can manage UI
+        await updateSessionStatus(s._id, statusSelect.value, statusSelect);
       });
 
       // disable by default unless peerMode enabled
@@ -496,6 +538,8 @@ async function loadSessions() {
 
       const sel = document.createElement("select");
       sel.className = "vl-status";
+      // store current status to dataset so we can revert if update fails
+      sel.dataset.current = s.status || "pending";
       ["pending","active","completed","cancelled"].forEach(st => {
         const opt = document.createElement("option");
         opt.value = st;
@@ -505,13 +549,13 @@ async function loadSessions() {
       });
       sel.disabled = !peerMode.enabled;
       sel.title = peerMode.enabled ? "Change status (peer mode)" : "Status updates allowed only in Peer Mode";
-      sel.addEventListener("change", () => {
+      sel.addEventListener("change", async () => {
         if (!peerMode.enabled) {
           alert("Only peers can update status. Enable Peer Mode first.");
-          sel.value = s.status;
+          sel.value = sel.dataset.current || s.status;
           return;
         }
-        updateSessionStatus(s._id, sel.value);
+        await updateSessionStatus(s._id, sel.value, sel);
       });
 
       // close button for vertical item
