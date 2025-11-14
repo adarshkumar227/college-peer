@@ -55,7 +55,7 @@ Calculates a **normalized score (0–1)** using weighted attributes.
 
 ### 1\. Clone the Repository
 
-\`\`\`bash git clone https://github.com//college-peer-matchmaker.git cd college-peer-matchmaker
+\`\`\`bash git clone https://github.com/adarshkumar227/college-peer cd college-peer-matchmaker
 
 2.  Install Dependencies npm install
     
