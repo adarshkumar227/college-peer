@@ -1,9 +1,9 @@
 
-# 🎓 College Peer Matchmaker
+# 🎓 PeerSync
 
 An intelligent web-based platform that connects students with suitable peers for collaborative learning, mentorship, or study partnerships — based on interests, budgets, ratings, and compatibility scores.
 
-Built with **Node.js (Express)**, **MongoDB**, and **Vanilla HTML/CSS/JavaScript**, this system uses **custom DSA-based algorithms** (Similarity Matching + Graph-Based Greedy Matching) to find the best peer matches.
+Built with **Node.js (Express)**, **MongoDB**, and **HTML/CSS/JavaScript**, this system uses **custom DSA-based algorithms** (Similarity Matching + Graph-Based Greedy Matching) to find the best peer matches.
 
 * * *
 
